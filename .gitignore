@@ -1,0 +1,41 @@
+# --- Secrets ---
+.env
+*.env
+!.env.example
+
+# --- Python ---
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Data ---
+# Raw/interim/processed data are large and/or reproducible from the pipeline.
+# We keep the folder structure (.gitkeep) but ignore the contents.
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+# Keep the provenance manifests so pulls are documented/citable in git.
+!data/raw/*.manifest.json
+
+# --- Reports ---
+# Track committed figures, ignore scratch exports.
+reports/figures/*
+!reports/figures/.gitkeep
+!reports/figures/*.png
+
+# --- GBIF download cache ---
+.cache/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

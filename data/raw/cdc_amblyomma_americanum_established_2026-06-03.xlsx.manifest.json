@@ -1,0 +1,12 @@
+{
+  "dataset": "CDC tick surveillance -- Amblyomma americanum established counties",
+  "established_through_year": 2024,
+  "source_url": "https://www.cdc.gov/ticks/media/files/2026/05/2025-lone-star-tick-surveillance-map-data.xlsx",
+  "landing_page": "https://www.cdc.gov/ticks/data-research/facts-stats/lone-star-tick-surveillance.html",
+  "pull_timestamp_utc": "2026-06-03T22:13:49.429080+00:00",
+  "bytes": 135217,
+  "record_count": null,
+  "raw_file": "cdc_amblyomma_americanum_established_2026-06-03.xlsx",
+  "http_content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "note": "CDC 'established' status is sticky/monotonic -> cumulative footprint, not an annual snapshot. Raw file saved untouched."
+}

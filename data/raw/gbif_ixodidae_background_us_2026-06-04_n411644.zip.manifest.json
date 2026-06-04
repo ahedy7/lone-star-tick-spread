@@ -1,0 +1,32 @@
+{
+  "taxon_label": "Ixodidae",
+  "taxon_key": 9167,
+  "country": "US",
+  "filters": {
+    "hasCoordinate": true,
+    "hasGeospatialIssue": false,
+    "country": "US"
+  },
+  "fields_min_required": [
+    "decimalLatitude",
+    "decimalLongitude",
+    "eventDate",
+    "year",
+    "coordinateUncertaintyInMeters",
+    "basisOfRecord",
+    "datasetKey",
+    "occurrenceID",
+    "institutionCode"
+  ],
+  "method": "download_api",
+  "format": "SIMPLE_CSV",
+  "gbif_download_key": "0036032-260519110011954",
+  "gbif_doi": "10.15468/dl.9ch43z",
+  "gbif_citation": "http://creativecommons.org/licenses/by-nc/4.0/legalcode",
+  "pull_timestamp_utc": "2026-06-04T04:01:19.941552+00:00",
+  "record_count": 411644,
+  "raw_file": "gbif_ixodidae_background_us_2026-06-04_n411644.zip",
+  "interim_extracted_csv": "gbif_ixodidae_background_us_2026-06-04_n411644.csv",
+  "crs": "EPSG:4326",
+  "note": "Cite via the GBIF DOI above. iNaturalist research-grade records are included via their GBIF dataset."
+}

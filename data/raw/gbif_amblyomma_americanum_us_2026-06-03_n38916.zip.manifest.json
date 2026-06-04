@@ -1,0 +1,32 @@
+{
+  "taxon_label": "Amblyomma americanum",
+  "taxon_key": 2184301,
+  "country": "US",
+  "filters": {
+    "hasCoordinate": true,
+    "hasGeospatialIssue": false,
+    "country": "US"
+  },
+  "fields_min_required": [
+    "decimalLatitude",
+    "decimalLongitude",
+    "eventDate",
+    "year",
+    "coordinateUncertaintyInMeters",
+    "basisOfRecord",
+    "datasetKey",
+    "occurrenceID",
+    "institutionCode"
+  ],
+  "method": "download_api",
+  "format": "SIMPLE_CSV",
+  "gbif_download_key": "0036018-260519110011954",
+  "gbif_doi": "10.15468/dl.p85b8y",
+  "gbif_citation": "http://creativecommons.org/licenses/by-nc/4.0/legalcode",
+  "pull_timestamp_utc": "2026-06-04T03:46:03.688805+00:00",
+  "record_count": 38916,
+  "raw_file": "gbif_amblyomma_americanum_us_2026-06-03_n38916.zip",
+  "interim_extracted_csv": "gbif_amblyomma_americanum_us_2026-06-03_n38916.csv",
+  "crs": "EPSG:4326",
+  "note": "Cite via the GBIF DOI above. iNaturalist research-grade records are included via their GBIF dataset."
+}
