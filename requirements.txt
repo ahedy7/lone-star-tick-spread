@@ -11,10 +11,18 @@ pandas==3.0.3
 shapely==2.1.2
 pyproj==3.7.2
 pyogrio==0.12.1
+h3==4.5.0
 requests==2.34.2
 requests-cache==1.3.2
 matplotlib==3.10.9
 numpy==2.4.6
+scipy==1.16.3
+
+# --- Stage 4 visualization (static figures: real tile basemaps + GIF) ---
+# The interactive map (viz/) has NO Python dependency -- it loads deck.gl,
+# MapLibre and h3-js from CDNs and reads the local exported data bundle.
+contextily==1.7.0   # CARTO Positron tile basemap under the static hex maps
+pillow==12.0.0      # PillowWriter backend for the animated GIF export
 
 # --- Config / secrets ---
 python-dotenv==1.2.2

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lone star tick &mdash; effort-corrected frontier</title>
+
+  <!-- Basemap: MapLibre GL (no API token) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+  />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <!-- h3-js (global `h3`): deck.gl's standalone bundle treats h3-js as an
+       external, so the H3HexagonLayer needs it loaded here. Must come BEFORE
+       deck.gl. -->
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <!-- deck.gl scripting bundle (includes H3HexagonLayer + MapboxOverlay) -->
+  <script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
+
+  <!-- Local data: defines window.LST_DATA. Loaded as a <script> so the page
+       opens straight from file:// with no local server (browsers block fetch()
+       of sibling files under file://). The same payload also lives in
+       data/cells.json for serving / reuse. -->
+  <script src="data/bundle.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Title / framing -->
+  <header id="titlecard">
+    <h1>Lone star tick: the frontier, with observer-effort bias removed</h1>
+    <p id="subtitle">
+      Share of citizen-science tick observations that were
+      <em>Amblyomma americanum</em>, by rolling 3-year window.
+    </p>
+    <div class="view-presets">
+      <span class="presets-label">View</span>
+      <button id="view-band" class="mini-btn">Frontier band</button>
+      <button id="view-usa" class="mini-btn">Full USA</button>
+    </div>
+  </header>
+
+  <!-- The headline interaction: RAW vs CORRECTED -->
+  <section id="surface-toggle" aria-label="Surface toggle">
+    <div class="toggle-label">The whole point &rarr; flip this</div>
+    <div class="seg">
+      <button id="btn-raw" class="seg-btn" data-surface="raw">
+        <span class="seg-title">RAW</span>
+        <span class="seg-sub">observer effort left in</span>
+      </button>
+      <button id="btn-shrunk" class="seg-btn active" data-surface="shrunk">
+        <span class="seg-title">CORRECTED</span>
+        <span class="seg-sub">effort share + shrinkage</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Time control + animation -->
+  <section id="time-control">
+    <div class="time-row">
+      <button id="play" class="play-btn" aria-label="Play / pause">&#9658;</button>
+      <input id="slider" type="range" min="0" max="0" value="0" step="1" />
+      <span id="window-label">&mdash;</span>
+    </div>
+    <div class="time-row secondary">
+      <div class="chk-group">
+        <label class="chk">
+          <input id="frontier-toggle" type="checkbox" />
+          <span>Northern frontier edge</span>
+        </label>
+        <label class="chk">
+          <input id="neon-toggle" type="checkbox" />
+          <span>NEON overlay</span>
+        </label>
+      </div>
+      <span id="stat-readout"></span>
+    </div>
+  </section>
+
+  <!-- Legend -->
+  <section id="legend">
+    <div class="legend-title" id="legend-title">share of tick observations that were lone star</div>
+    <div id="legend-bar"></div>
+    <div class="legend-ticks">
+      <span>0</span><span>0.2</span><span>0.4</span><span>0.6+</span>
+    </div>
+    <div id="frontier-legend" class="neon-legend hidden">
+      <span><span class="line-swatch"></span> corrected northern edge (this window)</span>
+    </div>
+    <div id="neon-legend" class="neon-legend hidden">
+      <span class="dot detected"></span> NEON: lone star detected
+      <span class="dot sampled"></span> NEON: sampled, none found
+    </div>
+  </section>
+
+  <!-- Honest caption -->
+  <footer id="caption">
+    <strong>What you're seeing.</strong> Each hexagon is the effort-corrected
+    share of iNaturalist tick sightings there that were lone star
+    (lone star &divide; all hard-tick sightings), stabilized with empirical-Bayes
+    shrinkage. Flip to <em>RAW</em> to watch single-sighting noise and
+    effort bias drop out. <strong>Caveat:</strong> the growing number of cells is
+    partly a coverage artifact (more observers, more places sampled) &mdash; the
+    honest signal is the contrast between surfaces and the slow northward push of
+    the leading edge (~70&nbsp;km over the decade), not raw area growth.
+  </footer>
+
+  <div id="loading">Loading map&hellip;</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

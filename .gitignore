@@ -30,6 +30,7 @@ data/processed/*
 reports/figures/*
 !reports/figures/.gitkeep
 !reports/figures/*.png
+!reports/figures/*.gif
 
 # --- GBIF download cache ---
 .cache/
