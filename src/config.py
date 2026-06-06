@@ -340,6 +340,85 @@ STAGE3_COUNTY_DETECTIONS_FILE: str = "county_detections.parquet"
 STAGE3_PRIOR_FILE: str = "stage3_beta_prior.json"
 
 # --------------------------------------------------------------------------- #
+# Stage 5 -- CDC validation (a spatial checkpoint, NOT a temporal validation)
+# --------------------------------------------------------------------------- #
+# Reads ONLY data/processed/ (the Stage 3 county_detections table + the Stage 2
+# tidy CDC table) and writes data/processed/ + reports/figures/ + viz/. Nothing
+# here touches data/raw/ or data/interim/.
+#
+# Framing baked into every caption: CDC "established" is a single cumulative,
+# sticky snapshot, so this compares our *cumulative ever-detected* footprint to
+# the official footprint -- a spatial checkpoint. Leading-edge counties are
+# candidates to watch, not confirmed expansion; blind spots reflect OUR observer
+# coverage, not absence of ticks.
+
+# --- Detection bar (mirrors CDC's establishment threshold) ----------------- #
+# A county counts as "detected" only if it clears a small observation threshold,
+# so a single stray does not register. The county_detections table carries
+# aggregated counts (life stage is collapsed at Stage 3's county aggregation, so
+# the brief's "multiple life stages where NEON provides them" refinement is not
+# recoverable here); the bar therefore reduces to an observation count: a county
+# is detected in a window when its total iNat+NEON A. americanum count >= this.
+# DECISION/default: 2 ("more than one observation").
+STAGE5_DETECTION_MIN_OBS: int = 2
+# Comparison footprint:
+#   "cumulative" -- ever-detected: a county clears the bar in ANY rolling window
+#                   (the union across windows). CDC established is itself a
+#                   cumulative sticky snapshot, so this is the apples-to-apples
+#                   footprint and the MAIN comparison.
+#   "recent"     -- only the most recent window clears the bar.
+# DECISION/default: "cumulative".
+STAGE5_COMPARISON_MODE: str = "cumulative"
+# How to treat CDC "Reported" counties (literature/anecdotal records, NOT
+# established). We never fold them into the established footprint -- the
+# establishment bar is the yardstick for recall/precision -- but a detected
+# "Reported" county is *partial corroboration*, so it is split into its own
+# leading-edge sub-bucket and also reported as a lenient-precision variant.
+# DECISION/default: "separate".
+STAGE5_REPORTED_TREATMENT: str = "separate"
+
+# --- Category vocabulary (use everywhere so the strings never drift) -------- #
+STAGE5_CAT_CONFIRMED: str = "confirmed"                  # detected & established
+STAGE5_CAT_LEADING_REPORTED: str = "leading_edge_reported"   # detected, CDC reported
+STAGE5_CAT_LEADING_NORECORDS: str = "leading_edge_no_records"  # detected, CDC none
+STAGE5_CAT_BLIND_SPOT: str = "blind_spot"               # established, not detected
+STAGE5_CAT_NEITHER: str = "neither"                     # not detected, not established
+# Human-readable labels for legends/captions.
+STAGE5_CATEGORY_LABELS: dict[str, str] = {
+    STAGE5_CAT_CONFIRMED: "Confirmed (detected & CDC-established)",
+    STAGE5_CAT_LEADING_REPORTED: "Leading edge · CDC reported (partial corroboration)",
+    STAGE5_CAT_LEADING_NORECORDS: "Leading edge · CDC no records (frontier candidate)",
+    STAGE5_CAT_BLIND_SPOT: "Blind spot (CDC-established, we missed)",
+    STAGE5_CAT_NEITHER: "Neither",
+}
+# Categorical palette for the choropleth + interactive layers (color-blind aware).
+STAGE5_CATEGORY_COLORS: dict[str, str] = {
+    STAGE5_CAT_CONFIRMED: "#2c7fb8",          # blue   -- agreement
+    STAGE5_CAT_LEADING_REPORTED: "#fdae61",   # amber  -- partial corroboration
+    STAGE5_CAT_LEADING_NORECORDS: "#d7191c",  # red    -- frontier candidate
+    STAGE5_CAT_BLIND_SPOT: "#bdbdbd",         # grey   -- coverage gap
+    STAGE5_CAT_NEITHER: "#f2f2f2",            # near-white background
+}
+
+# --- Stage 5 outputs -------------------------------------------------------- #
+# Canonical deliverables (data/processed/, regenerable).
+STAGE5_VALIDATION_PARQUET: str = "county_validation.parquet"
+STAGE5_VALIDATION_CSV: str = "county_validation.csv"
+STAGE5_METRICS_JSON: str = "stage5_validation_metrics.json"
+# Validation choropleth (reports/figures/).
+STAGE5_FIG_VALIDATION: str = "stage5_validation_choropleth.png"
+# Web layer for the interactive map (viz/data/). The .geojson is the servable
+# canonical asset; validation.js wraps the same FeatureCollection in a global so
+# the page opens straight from file:// (browsers block fetch() of siblings under
+# file://, a <script> tag does not). Only counties that are established OR
+# detected are exported (the "neither" universe is left as the basemap).
+STAGE5_WEB_GEOJSON: str = "county_validation.geojson"
+STAGE5_WEB_JS: str = "validation.js"  # window.LST_VALIDATION = {type:FeatureCollection,...}
+# Douglas-Peucker tolerance (degrees) applied to the exported county polygons to
+# keep the file:// bundle small. ~0.01 deg ~ 1 km -- invisible at national zoom.
+STAGE5_WEB_SIMPLIFY_TOLERANCE: float = 0.01
+
+# --------------------------------------------------------------------------- #
 # Stage 4 -- presentation-grade visualization
 # --------------------------------------------------------------------------- #
 # Reads ONLY data/processed/ Stage 3 outputs. Writes the interactive app to

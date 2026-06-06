@@ -24,6 +24,38 @@
   const NEON = DATA.neon;               // {window: [{lat, lon, detected}]}
   const FRONTIER = DATA.frontier;       // [{window, corNorthernLimit, ...}]
   const FLINES = DATA.frontierLines || {}; // {window: [[lon, lat], ...]}
+
+  // Stage 5 CDC validation layer (optional; null if validation.js not present).
+  // A county FeatureCollection tagged with category/established/detected, plus a
+  // meta.categoryColors palette exported straight from config.py.
+  const VALID = window.LST_VALIDATION || null;
+  const VAL_COLORS = (VALID && VALID.meta && VALID.meta.categoryColors) || {};
+  // CDC-established counties (confirmed + blind spots) for the footprint shading,
+  // and our leading-edge counties (detected, not CDC-established) for the
+  // highlight. Filtered once up front.
+  const CDC_FEATURES = VALID
+    ? { type: "FeatureCollection",
+        features: VALID.features.filter((f) => f.properties.established) }
+    : null;
+  const LEADING_FEATURES = VALID
+    ? { type: "FeatureCollection",
+        features: VALID.features.filter(
+          (f) =>
+            f.properties.category === "leading_edge_no_records" ||
+            f.properties.category === "leading_edge_reported"
+        ) }
+    : null;
+
+  function hexToRgb(hex) {
+    const h = (hex || "#888888").replace("#", "");
+    return [
+      parseInt(h.slice(0, 2), 16),
+      parseInt(h.slice(2, 4), 16),
+      parseInt(h.slice(4, 6), 16),
+    ];
+  }
+  // Steel-blue wash for the official footprint (sits UNDER the magma hexes).
+  const CDC_FILL = [70, 130, 180];
   const WINDOWS = META.windows;
   const [DOM_LO, DOM_HI] = META.colorDomain;
   const STOPS = META.colorStops;        // [[r,g,b], ...]
@@ -35,6 +67,8 @@
     surface: META.defaultSurface === "raw" ? "raw" : "shrunk",
     showNeon: false,
     showFrontier: false,
+    showCdc: false,
+    showLeading: false,
     playing: false,
   };
   const frontierByWindow = Object.fromEntries(
@@ -111,7 +145,48 @@
       transitions: { getFillColor: 250 },
     });
 
-    const layers = [hexLayer];
+    // CDC established footprint sits UNDER the hexes (a wash, not a cover), so
+    // the corrected surface still reads on top of the official footprint.
+    const layers = [];
+    if (state.showCdc && CDC_FEATURES) {
+      layers.push(
+        new deck.GeoJsonLayer({
+          id: "cdc-established",
+          data: CDC_FEATURES,
+          stroked: true,
+          filled: true,
+          getFillColor: [CDC_FILL[0], CDC_FILL[1], CDC_FILL[2], 70],
+          getLineColor: [CDC_FILL[0], CDC_FILL[1], CDC_FILL[2], 150],
+          lineWidthMinPixels: 0.4,
+          pickable: true,
+        })
+      );
+    }
+
+    layers.push(hexLayer);
+
+    // Our leading edge sits ABOVE the hexes so frontier counties pop against the
+    // official footprint -- coloured by CDC sub-status (no-records vs reported).
+    if (state.showLeading && LEADING_FEATURES) {
+      layers.push(
+        new deck.GeoJsonLayer({
+          id: "leading-edge",
+          data: LEADING_FEATURES,
+          stroked: true,
+          filled: true,
+          getFillColor: (f) => {
+            const c = hexToRgb(VAL_COLORS[f.properties.category]);
+            return [c[0], c[1], c[2], 70];
+          },
+          getLineColor: (f) => {
+            const c = hexToRgb(VAL_COLORS[f.properties.category]);
+            return [c[0], c[1], c[2], 255];
+          },
+          lineWidthMinPixels: 1.6,
+          pickable: true,
+        })
+      );
+    }
 
     if (state.showFrontier) {
       const pts = (FLINES[win] || []).map((p) => [p[0], p[1]]);
@@ -178,6 +253,18 @@
 
   function tooltip({ object, layer }) {
     if (!object) return null;
+    if (layer && (layer.id === "cdc-established" || layer.id === "leading-edge")) {
+      const p = object.properties || {};
+      const det = p.detected
+        ? `detected (peak ${p.peak_window_obs} obs; last ${p.last_detected_window || "—"})`
+        : "not detected by us";
+      return {
+        html:
+          `<b>${p.county || ""}, ${p.state || ""}</b><br/>` +
+          `${p.category_label || p.category || ""}<br/>` +
+          `CDC: ${p.cdc_status} &middot; ${det}`,
+      };
+    }
     if (layer && layer.id === "neon") {
       return {
         html: object.detected
@@ -215,6 +302,10 @@
     document
       .getElementById("frontier-legend")
       .classList.toggle("hidden", !state.showFrontier);
+    document.getElementById("cdc-legend").classList.toggle("hidden", !state.showCdc);
+    document
+      .getElementById("leading-legend")
+      .classList.toggle("hidden", !state.showLeading);
 
     const f = frontierByWindow[win];
     if (f) {
@@ -280,6 +371,24 @@
       render();
     });
 
+    const cdcToggle = document.getElementById("cdc-toggle");
+    const leadingToggle = document.getElementById("leading-toggle");
+    // Disable the validation toggles if validation.js was not loaded.
+    if (!VALID) {
+      [cdcToggle, leadingToggle].forEach((el) => {
+        el.disabled = true;
+        el.closest(".chk").title = "Run: python src/stage5.py";
+      });
+    }
+    cdcToggle.addEventListener("change", (e) => {
+      state.showCdc = e.target.checked;
+      render();
+    });
+    leadingToggle.addEventListener("change", (e) => {
+      state.showLeading = e.target.checked;
+      render();
+    });
+
     const band = META.frontierBand;
     document.getElementById("view-band").addEventListener("click", () => {
       if (!band) return;
@@ -317,6 +426,14 @@
       } else if (e.key.toLowerCase() === "f") {
         state.showFrontier = !state.showFrontier;
         document.getElementById("frontier-toggle").checked = state.showFrontier;
+        render();
+      } else if (e.key.toLowerCase() === "c" && VALID) {
+        state.showCdc = !state.showCdc;
+        document.getElementById("cdc-toggle").checked = state.showCdc;
+        render();
+      } else if (e.key.toLowerCase() === "e" && VALID) {
+        state.showLeading = !state.showLeading;
+        document.getElementById("leading-toggle").checked = state.showLeading;
         render();
       } else if (e.key.toLowerCase() === "b") {
         document.getElementById("view-band").click();

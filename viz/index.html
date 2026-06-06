@@ -23,6 +23,10 @@
        of sibling files under file://). The same payload also lives in
        data/cells.json for serving / reuse. -->
   <script src="data/bundle.js"></script>
+  <!-- Stage 5 CDC validation layer: defines window.LST_VALIDATION (a county
+       FeatureCollection tagged with confirmed / leading-edge / blind-spot). Same
+       file:// rationale as bundle.js. Regenerate with: python src/stage5.py -->
+  <script src="data/validation.js"></script>
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -75,6 +79,14 @@
           <input id="neon-toggle" type="checkbox" />
           <span>NEON overlay</span>
         </label>
+        <label class="chk">
+          <input id="cdc-toggle" type="checkbox" />
+          <span>CDC established footprint</span>
+        </label>
+        <label class="chk">
+          <input id="leading-toggle" type="checkbox" />
+          <span>Our leading edge</span>
+        </label>
       </div>
       <span id="stat-readout"></span>
     </div>
@@ -94,6 +106,13 @@
       <span class="dot detected"></span> NEON: lone star detected
       <span class="dot sampled"></span> NEON: sampled, none found
     </div>
+    <div id="cdc-legend" class="neon-legend hidden">
+      <span class="swatch cdc-established"></span> CDC established (cumulative footprint)
+    </div>
+    <div id="leading-legend" class="neon-legend hidden">
+      <span class="swatch le-norecords"></span> leading edge &middot; CDC no records (frontier candidate)
+      <span class="swatch le-reported"></span> leading edge &middot; CDC reported (partial)
+    </div>
   </section>
 
   <!-- Honest caption -->
@@ -102,10 +121,15 @@
     share of iNaturalist tick sightings there that were lone star
     (lone star &divide; all hard-tick sightings), stabilized with empirical-Bayes
     shrinkage. Flip to <em>RAW</em> to watch single-sighting noise and
-    effort bias drop out. <strong>Caveat:</strong> the growing number of cells is
-    partly a coverage artifact (more observers, more places sampled) &mdash; the
-    honest signal is the contrast between surfaces and the slow northward push of
-    the leading edge (~70&nbsp;km over the decade), not raw area growth.
+    effort bias drop out. Toggle <em>CDC established footprint</em> and
+    <em>Our leading edge</em> to set our cumulative ever-detected counties against
+    the official CDC footprint: leading-edge counties are candidates to watch (not
+    confirmed expansion), and CDC-established counties we miss are observer-coverage
+    blind spots (not absence of ticks). <strong>Caveat:</strong> the growing number
+    of cells is partly a coverage artifact (more observers, more places sampled)
+    &mdash; the honest signal is the contrast between surfaces and the slow
+    northward push of the leading edge (~70&nbsp;km over the decade), not raw area
+    growth.
   </footer>
 
   <div id="loading">Loading map&hellip;</div>
