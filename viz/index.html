@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lone star tick &mdash; effort-corrected frontier</title>
 
+  <!-- Type system: Inter (humanist sans, UI) + IBM Plex Mono (tabular figures),
+       loaded the same way as the rest of the portfolio. System fonts fall back
+       cleanly if these are unreachable. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
+  />
+
   <!-- Basemap: MapLibre GL (no API token) -->
   <link
     rel="stylesheet"
@@ -44,6 +54,13 @@
       <span class="presets-label">View</span>
       <button id="view-band" class="mini-btn">Frontier band</button>
       <button id="view-usa" class="mini-btn">Full USA</button>
+    </div>
+    <div id="vintage-stamp" title="The citizen-science frontier refreshes monthly; the CDC validation layer is a separate annual vintage.">
+      <span class="vintage-dot" aria-hidden="true"></span>
+      <span class="vintage-text">
+        <span class="vintage-line">Data vintage <b id="vintage-value">&mdash;</b></span>
+        <span class="vintage-sub" id="vintage-sub">citizen-science frontier, refreshed monthly</span>
+      </span>
     </div>
   </header>
 
@@ -132,7 +149,16 @@
     growth.
   </footer>
 
-  <div id="loading">Loading map&hellip;</div>
+  <!-- Loading + empty states, so a slow fetch or a guarded-out refresh never
+       shows a broken white screen. -->
+  <div id="loading">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>Loading the effort-corrected frontier&hellip;</span>
+  </div>
+  <div id="empty-state" class="hidden">
+    <strong>No cells in this window.</strong>
+    <span>Try another year window, or flip back to CORRECTED.</span>
+  </div>
 
   <script src="app.js"></script>
 </body>

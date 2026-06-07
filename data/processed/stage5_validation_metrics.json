@@ -1,0 +1,29 @@
+{
+  "framing": "Spatial checkpoint against the CDC 2025 cumulative established snapshot -- NOT a temporal validation. Leading-edge counties are candidates to watch; blind spots reflect our observer coverage.",
+  "detection_bar": {
+    "min_obs": 2,
+    "comparison_mode": "cumulative",
+    "reported_treatment": "separate"
+  },
+  "confusion_matrix": {
+    "TP_confirmed": 508,
+    "FP_leading_edge": 147,
+    "FN_blind_spot": 631,
+    "TN_neither": 1824,
+    "FP_leading_edge_reported": 106,
+    "FP_leading_edge_no_records": 41
+  },
+  "recall_of_cdc_established": 0.44600526777875327,
+  "precision_strict": 0.7755725190839695,
+  "precision_lenient_incl_reported": 0.9374045801526718,
+  "n_detected": 655,
+  "n_cdc_established": 1139,
+  "n_universe_counties": 3110,
+  "category_counts": {
+    "confirmed": 508,
+    "leading_edge_reported": 106,
+    "leading_edge_no_records": 41,
+    "blind_spot": 631,
+    "neither": 1824
+  }
+}

@@ -18,6 +18,10 @@ matplotlib==3.10.9
 numpy==2.4.6
 scipy==1.16.3
 
+# --- I/O engines (imported indirectly; required by the pipeline) ---
+pyarrow==18.1.0     # parquet engine for every data/processed/*.parquet round-trip
+openpyxl==3.1.5     # reads the CDC establishment .xlsx (clean.py / acquire_cdc.py)
+
 # --- Stage 4 visualization (static figures: real tile basemaps + GIF) ---
 # The interactive map (viz/) has NO Python dependency -- it loads deck.gl,
 # MapLibre and h3-js from CDNs and reads the local exported data bundle.

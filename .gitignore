@@ -25,6 +25,20 @@ data/processed/*
 # Keep the provenance manifests so pulls are documented/citable in git.
 !data/raw/*.manifest.json
 
+# Stage 6 -- track the analysis-grade processed outputs + the data-vintage state
+# so the repo is browsable and the monthly bot commit keeps it in sync with the
+# live site. The heavy cleaned-occurrence parquets stay ignored: they are
+# reproducible from acquire_gbif.py + clean.py and churn ~9 MB per refresh.
+!data/processed/*.csv
+!data/processed/*.json
+!data/processed/effort_corrected_cells.parquet
+!data/processed/neon_presence.parquet
+!data/processed/county_detections.parquet
+!data/processed/county_validation.parquet
+# CDC establishment source workbook (small; an annual vintage). clean.py
+# re-tidies it on every CI run, so it must be tracked.
+!data/raw/cdc_*.xlsx
+
 # --- Reports ---
 # Track committed figures, ignore scratch exports.
 reports/figures/*

@@ -1,0 +1,54 @@
+# Deploy the interactive map (viz/) to GitHub Pages.
+#
+# Pages SOURCE is "GitHub Actions" (Settings -> Pages -> Build and deployment ->
+# Source: GitHub Actions), NOT a gh-pages branch and NOT /docs. The deployed
+# site root is the *contents of viz/*, uploaded as an artifact. viz/ is the
+# single source of truth -- no generated data is hand-committed to a branch.
+#
+# This workflow handles the plain redeploy when viz/ changes on master (and a
+# manual button). The monthly data refresh lives in refresh.yml, which
+# regenerates viz/data and then deploys through the same Pages pipeline.
+name: Deploy map to Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "viz/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+# Least privilege for the Pages deployment (OIDC token + pages write).
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deployment at a time. Shared with refresh.yml so a manual deploy and
+# a monthly refresh can never publish over each other; queue rather than cancel
+# so an in-flight deploy is allowed to finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload viz/ as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: viz
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

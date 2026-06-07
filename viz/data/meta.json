@@ -1,0 +1,11 @@
+{
+  "dataVintage": "2026-06",
+  "lastUpdated": "2026-06-07",
+  "generatedUtc": "2026-06-07T01:58:59+00:00",
+  "latestWindow": "2024-2026",
+  "windowCount": 10,
+  "targetRecords": 38916,
+  "frontierSource": "GBIF / iNaturalist (citizen science), refreshed monthly",
+  "cdcVintage": "2025",
+  "cdcNote": "CDC establishment is an annual vintage and updates rarely and by hand; it is a periodic spatial checkpoint, not a live layer."
+}

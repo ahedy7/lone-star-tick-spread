@@ -441,6 +441,16 @@ VIZ_NEON_JSON: str = "neon.json"            # {window:[{lat,lon,detected}]}
 VIZ_FRONTIER_JSON: str = "frontier.json"    # per-window frontier metrics
 VIZ_FRONTIER_LINES_JSON: str = "frontier_lines.json"  # {window:[[lon,lat],...]}
 VIZ_BUNDLE_JS: str = "bundle.js"            # window.LST_DATA = {cells,neon,...}
+# Small machine-readable data-vintage stamp the deployed map reads to show
+# "Data vintage / Last updated", and that the monthly auto-refresh rewrites each
+# run (Stage 6). The same fields are also embedded in the bundle meta, so the
+# stamp still renders when the page is opened straight from file:// (no fetch).
+VIZ_META_JSON: str = "meta.json"
+# CDC establishment layer vintage. UNLIKE the GBIF/iNaturalist frontier (which
+# the monthly workflow refreshes), the CDC footprint is an ANNUAL vintage that
+# updates rarely and by hand. Surfaced in the map's scoping note so "self-
+# updating" never implies the CDC layer is live. Matches CDC_SHEET above.
+CDC_DATA_VINTAGE: str = "2025"
 # Ratios are rounded before export to keep the payload tiny (~thousands of rows).
 VIZ_RATIO_DECIMALS: int = 4
 

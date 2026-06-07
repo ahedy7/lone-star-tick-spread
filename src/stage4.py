@@ -34,6 +34,7 @@ Run as a script to regenerate every Stage 4 artifact:
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import logging
 import sys
@@ -112,6 +113,59 @@ def colormap_stops(n: int | None = None) -> list[list[int]]:
 
 
 # --------------------------------------------------------------------------- #
+# Data-vintage stamp (Stage 6): a small, machine-readable provenance block the
+# deployed map shows and the monthly auto-refresh rewrites each run.
+# --------------------------------------------------------------------------- #
+def _target_record_count() -> int | None:
+    """Count of cleaned A. americanum occurrences, or None if unreadable."""
+    path = config.PROCESSED_DIR / config.PROCESSED_TARGET_FILE
+    if not path.exists():
+        return None
+    try:
+        return int(len(pd.read_parquet(path, columns=["gbifID"])))
+    except Exception as exc:  # pragma: no cover - provenance is best-effort
+        log.warning("Could not count target records for meta (%s).", exc)
+        return None
+
+
+def build_vintage(windows: list[str]) -> dict[str, Any]:
+    """Build the data-vintage stamp embedded in the bundle and written to meta.json.
+
+    ``dataVintage`` is the build month (YYYY-MM): the citizen-science frontier is
+    a monthly-refreshed pull, so the build month is its honest vintage. The CDC
+    layer carries its own ANNUAL vintage separately so the UI can state, plainly,
+    that the validation layer is a periodic checkpoint and not live.
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    return {
+        "dataVintage": now.strftime("%Y-%m"),
+        "lastUpdated": now.date().isoformat(),
+        "generatedUtc": now.replace(microsecond=0).isoformat(),
+        "latestWindow": windows[-1] if windows else None,
+        "windowCount": len(windows),
+        "targetRecords": _target_record_count(),
+        "frontierSource": "GBIF / iNaturalist (citizen science), refreshed monthly",
+        "cdcVintage": config.CDC_DATA_VINTAGE,
+        "cdcNote": (
+            "CDC establishment is an annual vintage and updates rarely and by "
+            "hand; it is a periodic spatial checkpoint, not a live layer."
+        ),
+    }
+
+
+def write_site_meta(vintage: dict[str, Any]) -> Path:
+    """Write viz/data/meta.json (the stamp the deployed map reads / the workflow updates)."""
+    config.VIZ_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    out = config.VIZ_DATA_DIR / config.VIZ_META_JSON
+    out.write_text(json.dumps(vintage, indent=2), "utf-8")
+    log.info(
+        "Wrote data-vintage stamp -> %s (vintage=%s, %s records)",
+        out.name, vintage["dataVintage"], vintage.get("targetRecords"),
+    )
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # Task 1 -- web data export (compact JSON keyed by window) + JS bundle
 # --------------------------------------------------------------------------- #
 def export_web_data(layers: dict[str, pd.DataFrame]) -> dict[str, Any]:
@@ -176,6 +230,12 @@ def export_web_data(layers: dict[str, pd.DataFrame]) -> dict[str, Any]:
             w: round(float(v), 4) for w, v in nl_by_window.items()
         },
     }
+    # Embed the data-vintage stamp in the bundle meta so the deployed map always
+    # has it without a second fetch (works even from file://); write meta.json
+    # alongside as the canonical, workflow-rewritten copy.
+    vintage = build_vintage(windows)
+    meta["vintage"] = vintage
+    write_site_meta(vintage)
     cells_payload = {"meta": meta, "windows": cells_by_window}
 
     # --- NEON presence overlay, keyed by window ----------------------------- #

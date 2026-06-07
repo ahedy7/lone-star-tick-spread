@@ -1,0 +1,200 @@
+[
+  {
+    "dataset": "target",
+    "step": "load interim",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "gbif_amblyomma_americanum_us_2026-06-03_n38916.csv"
+  },
+  {
+    "dataset": "target",
+    "step": "standardize types",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "target",
+    "step": "tag source_type",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "target",
+    "step": "drop null coordinates",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "target",
+    "step": "drop zero coordinates",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "target",
+    "step": "drop bad coord issue flags",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "flags=['COORDINATE_INVALID', 'COORDINATE_OUT_OF_RANGE', 'COORDINATE_REPROJECTION_FAILED', 'COORDINATE_REPROJECTION_SUSPICIOUS', 'COUNTRY_COORDINATE_MISMATCH', 'PRESUMED_NEGATED_LATITUDE', 'PRESUMED_NEGATED_LONGITUDE', 'PRESUMED_SWAPPED_COORDINATE', 'ZERO_COORDINATE']"
+  },
+  {
+    "dataset": "target",
+    "step": "flag hex_reliable=False",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "max=10000m; flagged=937 (kept, not dropped); by source_type={'iNaturalist': 926, 'other': 11}; NaN stays reliable"
+  },
+  {
+    "dataset": "target",
+    "step": "drop duplicate occurrenceID",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "target",
+    "step": "drop cross-source dups",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "cross-source coord/date collisions only"
+  },
+  {
+    "dataset": "target",
+    "step": "reproject+h3+temporal",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "EPSG:5070, h3 res 5"
+  },
+  {
+    "dataset": "target",
+    "step": "trim to keep columns",
+    "rows_in": 38916,
+    "rows_out": 38916,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "23 cols"
+  },
+  {
+    "dataset": "background",
+    "step": "load interim",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "gbif_ixodidae_background_us_2026-06-04_n411644.csv"
+  },
+  {
+    "dataset": "background",
+    "step": "standardize types",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "background",
+    "step": "tag source_type",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "background",
+    "step": "drop null coordinates",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "background",
+    "step": "drop zero coordinates",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "background",
+    "step": "drop bad coord issue flags",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "flags=['COORDINATE_INVALID', 'COORDINATE_OUT_OF_RANGE', 'COORDINATE_REPROJECTION_FAILED', 'COORDINATE_REPROJECTION_SUSPICIOUS', 'COUNTRY_COORDINATE_MISMATCH', 'PRESUMED_NEGATED_LATITUDE', 'PRESUMED_NEGATED_LONGITUDE', 'PRESUMED_SWAPPED_COORDINATE', 'ZERO_COORDINATE']"
+  },
+  {
+    "dataset": "background",
+    "step": "flag hex_reliable=False",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "max=10000m; flagged=4266 (kept, not dropped); by source_type={'iNaturalist': 3878, 'other': 388}; NaN stays reliable"
+  },
+  {
+    "dataset": "background",
+    "step": "drop duplicate occurrenceID",
+    "rows_in": 411644,
+    "rows_out": 411644,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": ""
+  },
+  {
+    "dataset": "background",
+    "step": "drop cross-source dups",
+    "rows_in": 411644,
+    "rows_out": 411641,
+    "removed": 3,
+    "pct_removed": 0.001,
+    "note": "cross-source coord/date collisions only"
+  },
+  {
+    "dataset": "background",
+    "step": "reproject+h3+temporal",
+    "rows_in": 411641,
+    "rows_out": 411641,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "EPSG:5070, h3 res 5"
+  },
+  {
+    "dataset": "background",
+    "step": "trim to keep columns",
+    "rows_in": 411641,
+    "rows_out": 411641,
+    "removed": 0,
+    "pct_removed": 0.0,
+    "note": "23 cols"
+  }
+]

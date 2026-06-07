@@ -1,0 +1,121 @@
+# Monthly auto-refresh of the citizen-science frontier, then redeploy.
+#
+# What self-updates here is ONLY the GBIF / iNaturalist frontier (acquire ->
+# clean -> stage3 -> stage4 web export). The CDC establishment layer is an
+# annual vintage and is NOT re-acquired on this cron; NEON runs on its own
+# cadence. A data-freshness guard runs before the deploy so a GBIF outage or a
+# throttled, partial pull can never overwrite the live map with an empty one.
+name: Monthly data refresh
+
+on:
+  schedule:
+    # 06:00 UTC on the first of every month.
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+    inputs:
+      max_drop:
+        description: "Max tolerated drop in target count vs last-good (0-1)."
+        required: false
+        default: "0.20"
+
+permissions:
+  contents: write     # bot commit of refreshed outputs back to master
+  pages: write        # deploy the regenerated site
+  id-token: write     # OIDC token for deploy-pages
+
+# Share the Pages queue with deploy.yml AND serialize refreshes against each
+# other: same group, never cancel an in-flight run (let a deploy finish).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120     # GBIF prepares downloads asynchronously; poll has a bounded wait
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # acquire_gbif.py reads these exactly as the local .env does (config.py
+      # -> os.getenv). Set them as repository secrets:
+      #   Settings -> Secrets and variables -> Actions -> New repository secret.
+      GBIF_USER: ${{ secrets.GBIF_USER }}
+      GBIF_PWD: ${{ secrets.GBIF_PWD }}
+      GBIF_EMAIL: ${{ secrets.GBIF_EMAIL }}
+      REFRESH_MAX_DROP: ${{ github.event.inputs.max_drop || '0.20' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fail fast if GBIF secrets are missing
+        run: |
+          if [ -z "$GBIF_USER" ] || [ -z "$GBIF_PWD" ] || [ -z "$GBIF_EMAIL" ]; then
+            echo "::error::GBIF_USER / GBIF_PWD / GBIF_EMAIL secrets are not set. Refusing to fall back to the partial search API."
+            exit 1
+          fi
+
+      # --- Pipeline, in order. CDC acquisition + Stage 5 are intentionally NOT
+      #     run here (annual vintage). The GBIF download API prepares downloads
+      #     asynchronously; pull_via_download_api polls with a bounded timeout
+      #     instead of failing on the first not-ready response. ---
+      - name: Acquire GBIF (download API, both taxa)
+        run: python src/acquire_gbif.py --method download --only both
+
+      - name: Stage 2 -- clean / harmonize
+        run: python src/clean.py
+
+      - name: Stage 3 -- effort correction + frontier
+        run: python src/stage3.py
+
+      - name: Stage 4 -- regenerate web JSON + meta.json
+        run: python src/stage4.py --only web
+
+      # --- Safety gate: a bad pull must never reach the public map. ---
+      - name: Data-freshness guard
+        run: python src/refresh_guard.py
+
+      # --- Deploy the freshly built site (only reached if the guard passed). ---
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload viz/ as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: viz
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # --- Keep the repo in sync with the live site. Cleaned-occurrence parquets
+      #     are gitignored (heavy, reproducible), so this commits the Stage 3+
+      #     processed outputs, the web JSON, meta.json, last_good_counts.json,
+      #     and the new GBIF provenance manifests. ---
+      - name: Commit refreshed outputs back to master
+        run: |
+          git config user.name "lst-refresh-bot"
+          git config user.email "actions@github.com"
+          git add data/processed viz/data data/raw
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(data): monthly frontier refresh (vintage $(date -u +%Y-%m))
+
+          Automated GBIF/iNaturalist pull -> clean -> stage3 -> stage4 web export,
+          passed the data-freshness guard and redeployed to Pages.
+
+          Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
+            git push
+          fi

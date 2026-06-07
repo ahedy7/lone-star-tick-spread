@@ -115,18 +115,47 @@ def _log_step(
 # --------------------------------------------------------------------------- #
 # Load
 # --------------------------------------------------------------------------- #
+def resolve_interim(filename: str) -> Path:
+    """Locate the interim extract for a role, tolerating a fresh GBIF pull.
+
+    Stage 1 stamps each extract with its pull date and record count
+    (``<slug>_us_<date>_n<count>.csv``), and ``config.STAGE2_INPUTS`` pins one
+    such name. When a new pull lands (e.g. the monthly auto-refresh in CI), the
+    stamped name changes, so the pinned name no longer exists. Rather than force
+    an edit to config.py on every refresh, we fall back to the NEWEST file that
+    shares the role's slug (everything up to ``_us_``). The exact pinned name is
+    still preferred when present, so local runs are unchanged.
+    """
+    exact = config.INTERIM_DIR / filename
+    if exact.exists():
+        return exact
+    slug = filename.split("_us_")[0]  # e.g. "gbif_amblyomma_americanum"
+    candidates = sorted(
+        config.INTERIM_DIR.glob(f"{slug}_us_*.csv"),
+        key=lambda p: p.stat().st_mtime,
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"No interim extract found for {slug!r} in {config.INTERIM_DIR} "
+            f"(looked for {filename} and {slug}_us_*.csv). Did Stage 1 run? "
+            "Check config.STAGE2_INPUTS / run `python src/acquire_gbif.py`."
+        )
+    newest = candidates[-1]
+    if newest.name != filename:
+        log.info(
+            "Pinned interim %s absent; using newest matching pull %s.",
+            filename, newest.name,
+        )
+    return newest
+
+
 def load_interim(filename: str) -> pd.DataFrame:
     """Read a GBIF SIMPLE_CSV extract from data/interim/ (tab-separated)."""
-    path = config.INTERIM_DIR / filename
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Interim file not found: {path}. Did Stage 1 run? "
-            "Check config.STAGE2_INPUTS filenames."
-        )
+    path = resolve_interim(filename)
     df = pd.read_csv(
         path, sep=config.INTERIM_SEP, usecols=_READ_COLUMNS, low_memory=False
     )
-    log.info("Loaded %s (%d rows, %d cols)", filename, len(df), df.shape[1])
+    log.info("Loaded %s (%d rows, %d cols)", path.name, len(df), df.shape[1])
     return df
 
 

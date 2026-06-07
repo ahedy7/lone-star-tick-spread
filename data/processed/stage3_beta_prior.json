@@ -1,0 +1,9 @@
+{
+  "alpha": 0.19290621601152125,
+  "beta": 0.7589887682006519,
+  "prior_mean": 0.20265493485206065,
+  "prior_strength": 0.9518949842121731,
+  "pooled_rate": 0.2017009115318575,
+  "method": "beta-binomial-mle",
+  "n_cellwindows": 27903
+}

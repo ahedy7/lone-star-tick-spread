@@ -21,6 +21,10 @@
 
   const META = DATA.cells.meta;
   const CELLS = DATA.cells.windows;     // {window: [{h, r, s}]}
+  // Data-vintage stamp. The bundle always carries it (works from file://); when
+  // served over http we also try the canonical data/meta.json (which the monthly
+  // workflow rewrites) and let it override, so the deployed stamp is never stale.
+  let VINTAGE = META.vintage || null;
   const NEON = DATA.neon;               // {window: [{lat, lon, detected}]}
   const FRONTIER = DATA.frontier;       // [{window, corNorthernLimit, ...}]
   const FLINES = DATA.frontierLines || {}; // {window: [[lon, lat], ...]}
@@ -91,6 +95,32 @@
       Math.round(a[1] + (b[1] - a[1]) * frac),
       Math.round(a[2] + (b[2] - a[2]) * frac),
     ];
+  }
+
+  // ---- data-vintage stamp ------------------------------------------------ //
+  function paintVintage() {
+    const v = VINTAGE || {};
+    const valEl = document.getElementById("vintage-value");
+    const subEl = document.getElementById("vintage-sub");
+    if (valEl) valEl.textContent = v.dataVintage || "—";
+    if (subEl) {
+      const last = v.lastUpdated ? ` · updated ${v.lastUpdated}` : "";
+      subEl.textContent = `citizen-science frontier, refreshed monthly${last}`;
+    }
+  }
+  function loadVintage() {
+    paintVintage(); // immediate, from the embedded bundle copy (no flash)
+    // Relative path so it resolves under the GitHub Pages subpath; fails
+    // silently from file:// (browsers block fetch of siblings there).
+    fetch("data/meta.json", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        if (m && m.dataVintage) {
+          VINTAGE = m;
+          paintVintage();
+        }
+      })
+      .catch(() => {});
   }
 
   function buildLegendBar() {
@@ -251,40 +281,79 @@
     return layers;
   }
 
+  function vintageFooter() {
+    const v = VINTAGE || {};
+    return v.dataVintage
+      ? `<div class="tip-meta">data vintage ${v.dataVintage}</div>`
+      : "";
+  }
+
   function tooltip({ object, layer }) {
     if (!object) return null;
+
     if (layer && (layer.id === "cdc-established" || layer.id === "leading-edge")) {
       const p = object.properties || {};
       const det = p.detected
-        ? `detected (peak ${p.peak_window_obs} obs; last ${p.last_detected_window || "—"})`
+        ? `detected by us (peak ${p.peak_window_obs} obs; last ${p.last_detected_window || "—"})`
         : "not detected by us";
       return {
         html:
-          `<b>${p.county || ""}, ${p.state || ""}</b><br/>` +
-          `${p.category_label || p.category || ""}<br/>` +
-          `CDC: ${p.cdc_status} &middot; ${det}`,
+          `<div class="lst-tip">` +
+          `<div class="tip-title">${p.county || ""}, ${p.state || ""}</div>` +
+          `<div class="tip-row">${p.category_label || p.category || ""}</div>` +
+          `<div class="tip-row">CDC status: <span class="tip-val">${p.cdc_status}</span></div>` +
+          `<div class="tip-row">${det}</div>` +
+          `<div class="tip-meta">CDC establishment is an annual vintage (${
+            (VINTAGE && VINTAGE.cdcVintage) || "—"
+          }), not live</div>` +
+          `</div>`,
       };
     }
+
     if (layer && layer.id === "neon") {
       return {
-        html: object.detected
-          ? "<b>NEON</b><br/>lone star detected (systematic sampling)"
-          : "<b>NEON</b><br/>sampled here; no lone star found",
+        html:
+          `<div class="lst-tip">` +
+          `<div class="tip-title">NEON · systematic sampling</div>` +
+          `<div class="tip-row">${
+            object.detected
+              ? 'lone star <span class="tip-accent">detected</span> here'
+              : "sampled here; no lone star found"
+          }</div>` +
+          `<div class="tip-meta">independent structured anchor (drag-cloth survey)</div>` +
+          `</div>`,
       };
     }
-    const raw = (object.r * 100).toFixed(0);
-    const cor = (object.s * 100).toFixed(0);
+
+    // Hex cell: lead with the plain-language reading of the active surface.
+    const win = WINDOWS[state.windowIndex];
+    const isRaw = state.surface === "raw";
+    const active = isRaw ? object.r : object.s;
+    const activeName = isRaw ? "raw" : "effort-corrected";
     return {
       html:
-        `<b>${object.h}</b><br/>` +
-        `raw share: ${raw}%<br/>` +
-        `corrected share: ${cor}%`,
+        `<div class="lst-tip">` +
+        `<div class="tip-title">Share that were lone star</div>` +
+        `<div class="tip-row">${activeName}: ` +
+        `<span class="tip-val tip-accent">${active.toFixed(2)}</span> ` +
+        `of tick observations here</div>` +
+        `<div class="tip-row">window <span class="tip-val">${win}</span></div>` +
+        `<div class="tip-row" style="opacity:.8">raw ${object.r.toFixed(
+          2
+        )} · corrected ${object.s.toFixed(2)}</div>` +
+        vintageFooter() +
+        `</div>`,
     };
   }
 
   function render() {
     deckOverlay.setProps({ layers: buildLayers(), getTooltip: tooltip });
     syncUI();
+    // Graceful empty state: a window with no cells should never read as a broken
+    // map (this also covers a guarded-out refresh that shipped a thin payload).
+    const hasCells = (CELLS[WINDOWS[state.windowIndex]] || []).length > 0;
+    const empty = document.getElementById("empty-state");
+    if (empty) empty.classList.toggle("hidden", hasCells);
   }
 
   // ---- UI sync ----------------------------------------------------------- //
@@ -442,6 +511,7 @@
   }
 
   buildLegendBar();
+  loadVintage();
   initControls();
   syncUI();
 })();
