@@ -1,4 +1,4 @@
-# Lone Star Tick: the Effort-Corrected Frontier
+# Lone Star Tick: Moving North
 
 The lone star tick used to be a Southern creature. Over the last few decades it
 has been creeping northward, and it now turns up in New York and New England,
@@ -175,7 +175,7 @@ working public map with an empty one.
 
 ---
 
-## Data provenance
+## Data
 
 - **GBIF occurrences** (US, georeferenced), pulled via the citable download API.
   iNaturalist research-grade observations flow into GBIF, so one pull captures
