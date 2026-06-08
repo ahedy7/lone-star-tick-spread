@@ -64,16 +64,8 @@ per-longitude 95th-percentile latitude of positive cells; the dashed line is the
 | CDC validation precision, lenient (incl. CDC-reported) | **93.7%** |
 | CDC validation recall of established counties | **44.6%** |
 
-**What the numbers mean.** The northern edge of the tick's range has moved about
-66 km (41 miles) north over the past decade. We measure that edge in a way that
-ignores the occasional stray tick found far from the range, so one unusual
-sighting cannot distort it. To check the map, we compare it against the CDC's
-official county records. When our map flags a county as having the tick, the CDC
-agrees about 78 percent of the time, rising to 94 percent if we also count
-counties the CDC has at least received reports from. Looking the other way, our
-map catches about 45 percent of the counties the CDC officially recognizes. The
-ones we miss are mostly rural counties with few people reporting, so that gap
-reflects where people are looking, not where the tick is.
+**What the numbers mean.** The northern edge of the tick's range has moved about 66 km (41 miles) north over the past decade. We draw that edge by grouping the positive cells, the hexagons with genuine lone star signal, into narrow longitude bins and taking the 95th percentile of their latitudes within each bin. Connecting those points from west to east traces the front line you see advancing on the map. The 95th percentile is deliberate. The single northernmost cell would chase random strays, such as one tick photographed far from the range, and would lurch around from one window to the next. The 95th percentile is robust: it marks where the bulk of the northern presence ends and ignores the rare outlier poking above it. The 66 km figure is the average northward gain of that line from the 2015 to 2017 baseline to the most recent window.
+To check the map, we compare it against the CDC's official county records. When our map flags a county as having the tick, the CDC agrees about 78 percent of the time, rising to 94 percent if we also count counties the CDC has at least received reports from. Looking the other way, our map catches about 45 percent of the counties the CDC officially recognizes. The ones we miss are mostly rural counties with few people reporting, so that gap reflects where people are looking, not where the tick is.
 
 ---
 
