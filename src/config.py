@@ -503,6 +503,25 @@ VIZ_DEFAULT_WINDOW: str | None = None
 VIZ_ANIM_MS_PER_WINDOW: int = 900
 VIZ_HEX_OPACITY: float = 0.78         # choropleth fill opacity over the basemap
 
+# --- Insufficient-data (prior bleed-through) treatment --------------------- #
+# In the CORRECTED surface the shrinkage floor (numerator + alpha) / (denominator
+# + alpha + beta) can never reach zero, so a cell with NO lone star sightings
+# (numerator == 0) but very few total tick sightings reads as a faint nonzero
+# value (up to ~0.10) that is the prior leaking through, NOT real ticks. Such
+# cells are given a neutral "too few sightings to judge" treatment instead of a
+# faint color. A cell qualifies as prior-bleed when it has no lone star signal
+# (numerator == 0) AND fewer than this many total tick sightings. Cells WITH any
+# lone star signal (numerator >= 1) are always shown -- they are real detections,
+# however thin -- so this never hides frontier signal, and the frontier metrics
+# (which require shrunk_ratio >= OCCUPIED_INTENSITY_THRESHOLD, unreachable at
+# numerator == 0) are unaffected.
+# DECISION/default: 5 (tuned against the California prior-bleed specks).
+VIZ_MIN_OBS_FOR_CORRECTED: int = 5
+# Neutral fill for prior-bleed cells (light grey), and its opacity (kept low so
+# the wash reads as "thin data" without competing with the magma signal).
+VIZ_INSUFFICIENT_DATA_COLOR: str = "#cfcfcf"
+VIZ_INSUFFICIENT_DATA_OPACITY: float = 0.45
+
 # --- Static figures -------------------------------------------------------- #
 VIZ_FIG_DPI: int = 220
 # contextily tile provider key path (CartoDB.Positron) -- matches the

@@ -1,15 +1,48 @@
 # Lone Star Tick: the Effort-Corrected Frontier
 
-Tracking the northward range expansion of the lone star tick (*Amblyomma
-americanum*) across the United States, with citizen-science observer bias
-removed and the result checked against CDC county surveillance.
+The lone star tick used to be a Southern creature. Over the last few decades it
+has been creeping northward, and it now turns up in New York and New England,
+places it was basically never seen before. That matters because its bite can do
+strange things, most famously triggering a sudden allergy to red meat. So a fair
+question for anyone living in the Northeast is: is this thing coming to my area,
+and how fast?
 
 ### [Open the live interactive map](https://ahedy7.github.io/lone-star-tick-spread/)
 
-A deck.gl time-slider map of the effort-corrected frontier. Flip RAW against
-CORRECTED and watch observer-effort bias drop out of the surface. The
-citizen-science frontier refreshes automatically every month; a data-vintage
-stamp on the map shows when it was last built.
+This project answers that with a map you can scrub through time. You drag a slider
+from the past toward today and watch the tick's leading edge climb north across
+the country, year by year: where the front line sat about a decade ago, where it
+is now, and how quickly it has been advancing. Instead of a frozen snapshot, you
+see the movement. And it delivers one honest headline number: the leading edge of
+the tick's range has pushed north by about 66 km (41 miles) over the decade.
+
+Now the part that makes it more than a pretty picture. The map is built from
+sightings that ordinary people report. Someone finds a tick, photographs it, logs
+it in a nature app. The catch is that those apps have exploded in popularity. So
+if you simply count sightings, you will see a huge increase that has nothing to do
+with ticks. It is just more people walking around with phones, looking and
+reporting. It is the same trap as a town that installs a pile of new security
+cameras and then panics that crime is rising, when really it is only watching
+more.
+
+So the project does something careful. Instead of asking how many ticks were
+reported in a place, it asks what share of all the nature-spotting there was
+ticks. If a place lights up for ticks specifically, not just for nature reports in
+general, that is a real signal. That single move separates "the ticks are actually
+spreading" from "more people are just looking," and it is the difference between a
+credible project and a misleading one.
+
+Then, to make sure it is not fooling itself, it checks its answer against the
+official record. The CDC publishes which counties it considers to have established
+tick populations, so the project lays its own picture next to the government's
+verified one. Where they agree, you can trust it. Where the project shows ticks
+before the CDC has caught up, that is the interesting edge, a possible early
+warning of where they are headed next.
+
+Last piece: the map keeps itself current. Rather than being frozen on the day it
+was made, it refreshes on its own, so a few months from now it shows newer
+sightings than it does today, with a last-updated date on it. Someone checking in
+next spring sees next spring's leading edge, not last year's.
 
 <p align="center">
   <img src="reports/figures/stage4_frontier_advance.gif"
@@ -26,21 +59,25 @@ per-longitude 95th-percentile latitude of positive cells; the dashed line is the
 
 | Result | Value |
 | --- | --- |
-| Corrected northern-limit advance (decade) | **~66 km** |
+| Corrected northern-limit advance (decade) | **about 66 km (41 miles)** |
 | CDC validation precision, strict | **77.6%** |
 | CDC validation precision, lenient (incl. CDC-reported) | **93.7%** |
 | CDC validation recall of established counties | **44.6%** |
 
-The corrected northern range limit (a robust 95th-percentile latitude of positive
-cells, not the single northernmost sighting) moves about 66 km north over the
-decade. Where we say a county has the tick, CDC agrees 77.6% of the time on the
-strict bar and 93.7% once CDC "Reported" counties count as partial corroboration.
-We recover 44.6% of CDC-established counties; the misses are rural, low-observer
-counties, which is a statement about citizen-science coverage, not about ticks.
+**What the numbers mean.** The northern edge of the tick's range has moved about
+66 km (41 miles) north over the past decade. We measure that edge in a way that
+ignores the occasional stray tick found far from the range, so one unusual
+sighting cannot distort it. To check the map, we compare it against the CDC's
+official county records. When our map flags a county as having the tick, the CDC
+agrees about 78 percent of the time, rising to 94 percent if we also count
+counties the CDC has at least received reports from. Looking the other way, our
+map catches about 45 percent of the counties the CDC officially recognizes. The
+ones we miss are mostly rural counties with few people reporting, so that gap
+reflects where people are looking, not where the tick is.
 
 ---
 
-## What this is, and why it is not trivial
+## How the map works
 
 Presence-only citizen-science data conflates two different things: where the
 ticks are, and where people are looking for ticks. iNaturalist sightings cluster
@@ -80,6 +117,19 @@ Two independent layers keep the citizen-science story honest:
 pinned to 0 or 1 in thin single-observation cells (the scattered dark specks);
 shrinkage (right) pulls those toward the regional rate while well-sampled cells
 barely move, leaving the stable effort-corrected signal.</em></p>
+
+### Why some empty areas show a faint value (and how the map handles it)
+
+Cells with very little data lean on the national average. Because the shrinkage
+formula has a floor it can never reach exactly zero, a handful of cells well
+outside the tick's true range (California, for instance, where lone star ticks are
+essentially absent) can show a faint nonzero value. That faint value is an
+artifact of the method, driven by how few sightings the cell has, not by real
+ticks. The map handles this by not coloring cells that have too few sightings to
+judge: a cell with no lone star sightings and only a handful of tick sightings is
+left a neutral grey instead of a faint color. The deeper fix, letting each cell
+borrow from its neighbors instead of from the national average, is the natural
+next step and is left as documented future work.
 
 ---
 

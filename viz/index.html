@@ -116,6 +116,9 @@
     <div class="legend-ticks">
       <span>0</span><span>0.2</span><span>0.4</span><span>0.6+</span>
     </div>
+    <div id="insufficient-legend" class="neon-legend">
+      <span><span class="swatch insufficient"></span> too few sightings to judge</span>
+    </div>
     <div id="frontier-legend" class="neon-legend hidden">
       <span><span class="line-swatch"></span> corrected northern edge (this window)</span>
     </div>
@@ -134,19 +137,16 @@
 
   <!-- Honest caption -->
   <footer id="caption">
-    <strong>What you're seeing.</strong> Each hexagon is the effort-corrected
-    share of iNaturalist tick sightings there that were lone star
-    (lone star &divide; all hard-tick sightings), stabilized with empirical-Bayes
-    shrinkage. Flip to <em>RAW</em> to watch single-sighting noise and
-    effort bias drop out. Toggle <em>CDC established footprint</em> and
-    <em>Our leading edge</em> to set our cumulative ever-detected counties against
-    the official CDC footprint: leading-edge counties are candidates to watch (not
-    confirmed expansion), and CDC-established counties we miss are observer-coverage
-    blind spots (not absence of ticks). <strong>Caveat:</strong> the growing number
-    of cells is partly a coverage artifact (more observers, more places sampled)
-    &mdash; the honest signal is the contrast between surfaces and the slow
-    northward push of the leading edge (~70&nbsp;km over the decade), not raw area
-    growth.
+    <strong>What you're seeing.</strong> Each hexagon shows how much of the local
+    tick-spotting was the lone star tick, rather than the raw number of sightings.
+    That share is what tells you the tick is really there, instead of just more
+    people out looking. Flip to <em>RAW</em> to see the unadjusted version, where
+    busy areas light up simply because more people report. The red line is the
+    northern edge of the range, which has crept about 66&nbsp;km (41&nbsp;miles)
+    north over the past decade. That edge is the trustworthy signal. The total
+    lit-up area is not, since it grows partly because more people report over time.
+    Use the <em>CDC</em> and <em>leading edge</em> toggles to compare this map
+    against the official county records.
   </footer>
 
   <!-- Loading + empty states, so a slow fetch or a guarded-out refresh never

@@ -64,6 +64,15 @@
   const [DOM_LO, DOM_HI] = META.colorDomain;
   const STOPS = META.colorStops;        // [[r,g,b], ...]
   const HEX_ALPHA = Math.round((META.hexOpacity || 0.78) * 255);
+  // Prior-bleed treatment for the CORRECTED surface: a cell with no lone star
+  // signal (k === 0) and too few total tick sightings (n < MIN_OBS) shows the
+  // shrinkage floor, not real ticks, so it is washed neutral grey instead of a
+  // faint color. Cells with any lone star signal are always colored.
+  const MIN_OBS = META.minObsForCorrected || 5;
+  const INSUFF_RGB = hexToRgb(META.insufficientColor || "#cfcfcf");
+  const INSUFF_ALPHA = Math.round(
+    (META.insufficientOpacity != null ? META.insufficientOpacity : 0.45) * 255
+  );
 
   // ---- application state ------------------------------------------------- //
   const state = {
@@ -163,6 +172,9 @@
       data: records,
       getHexagon: (d) => d.h,
       getFillColor: (d) => {
+        if (state.surface !== "raw" && d.k === 0 && d.n < MIN_OBS) {
+          return [INSUFF_RGB[0], INSUFF_RGB[1], INSUFF_RGB[2], INSUFF_ALPHA];
+        }
         const c = rampColor(valueOf(d));
         return [c[0], c[1], c[2], HEX_ALPHA];
       },
@@ -366,6 +378,11 @@
     document
       .getElementById("btn-shrunk")
       .classList.toggle("active", state.surface === "shrunk");
+
+    // The "too few sightings" wash only exists on the corrected surface.
+    document
+      .getElementById("insufficient-legend")
+      .classList.toggle("hidden", state.surface === "raw");
 
     document.getElementById("neon-legend").classList.toggle("hidden", !state.showNeon);
     document

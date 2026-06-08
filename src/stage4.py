@@ -18,7 +18,7 @@ This module only **reads** ``data/processed/`` (the Stage 3 outputs) and only
 Honest-framing guardrails baked into every caption produced here:
 
 * the headline is the **raw-vs-corrected contrast** and the **northern-limit
-  advance** (~70 km over the decade);
+  advance** (~66 km over the decade);
 * the **centroid contrast** shows observer-effort bias being removed (raw
   count-weighting is pulled toward high-volume southern metros; share-weighting
   is not), converging as coverage fills in;
@@ -171,8 +171,11 @@ def write_site_meta(vintage: dict[str, Any]) -> Path:
 def export_web_data(layers: dict[str, pd.DataFrame]) -> dict[str, Any]:
     """Export the deck.gl payload: a compact JSON keyed by window + a JS bundle.
 
-    cells.json -> {meta, windows:{<window>:[{h,r,s}, ...]}} where h=h3_cell,
-    r=raw_ratio, s=shrunk_ratio (rounded). The H3HexagonLayer renders hexagons
+    cells.json -> {meta, windows:{<window>:[{h,r,s,k,n}, ...]}} where h=h3_cell,
+    r=raw_ratio, s=shrunk_ratio (rounded), k=numerator (lone star count), n=
+    denominator (all-tick count). k and n let the renderer give prior-bleed cells
+    (no lone star signal, too few sightings) a neutral "insufficient data"
+    treatment in the corrected surface. The H3HexagonLayer renders hexagons
     straight from the H3 ids, so no polygon geometry is exported.
     """
     cells = layers["cells"]
@@ -187,8 +190,17 @@ def export_web_data(layers: dict[str, pd.DataFrame]) -> dict[str, Any]:
     for win in windows:
         g = cells[cells["window"] == win]
         recs = [
-            {"h": h, "r": round(float(r), dec), "s": round(float(s), dec)}
-            for h, r, s in zip(g["h3_cell"], g["raw_ratio"], g["shrunk_ratio"])
+            {
+                "h": h,
+                "r": round(float(r), dec),
+                "s": round(float(s), dec),
+                "k": int(k),
+                "n": int(n),
+            }
+            for h, r, s, k, n in zip(
+                g["h3_cell"], g["raw_ratio"], g["shrunk_ratio"],
+                g["numerator"], g["denominator"],
+            )
         ]
         cells_by_window[win] = recs
 
@@ -209,6 +221,9 @@ def export_web_data(layers: dict[str, pd.DataFrame]) -> dict[str, Any]:
         "colormapName": config.VIZ_COLORMAP,
         "rateLabel": config.VIZ_RATE_LABEL,
         "hexOpacity": config.VIZ_HEX_OPACITY,
+        "minObsForCorrected": config.VIZ_MIN_OBS_FOR_CORRECTED,
+        "insufficientColor": config.VIZ_INSUFFICIENT_DATA_COLOR,
+        "insufficientOpacity": config.VIZ_INSUFFICIENT_DATA_OPACITY,
         "animMsPerWindow": config.VIZ_ANIM_MS_PER_WINDOW,
         "basemapStyleUrl": config.VIZ_BASEMAP_STYLE_URL,
         "initialViewState": {
@@ -489,6 +504,19 @@ def _norm():
     return mcolors.Normalize(vmin=lo, vmax=hi, clip=True)
 
 
+def _insufficient_mask(g: pd.DataFrame) -> "Any":
+    """Boolean mask of prior-bleed cells in the CORRECTED surface.
+
+    A cell is prior-bleed (its faint corrected value is the shrinkage floor, not
+    real ticks) when it has NO lone star signal (numerator == 0) AND fewer than
+    ``VIZ_MIN_OBS_FOR_CORRECTED`` total tick sightings. Cells with any lone star
+    signal stay colored, so genuine frontier cells are never masked.
+    """
+    return (g["numerator"] == 0) & (
+        g["denominator"] < config.VIZ_MIN_OBS_FOR_CORRECTED
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Figure 1 -- raw vs corrected hex map, most recent window, shared legend
 # --------------------------------------------------------------------------- #
@@ -513,6 +541,8 @@ def fig_raw_vs_corrected(cells: pd.DataFrame) -> Path:
         (axes[0], "raw_ratio", "RAW  ·  noisy single-sighting cells"),
         (axes[1], "shrunk_ratio", "CORRECTED  ·  effort share + shrinkage"),
     ]
+    grey = config.VIZ_INSUFFICIENT_DATA_COLOR
+    grey_alpha = config.VIZ_INSUFFICIENT_DATA_OPACITY
     for ax, col, subtitle in panels:
         # Limits BEFORE the basemap so contextily fetches the right tiles/zoom.
         ax.set_xlim(minx, maxx)
@@ -520,9 +550,27 @@ def fig_raw_vs_corrected(cells: pd.DataFrame) -> Path:
         ax.set_aspect("equal")
         if not _add_basemap(ax):
             _add_state_base(ax)
-        gdf = _hex_geodataframe(g, col)
-        gdf.plot(ax=ax, column=col, cmap=cmap, norm=norm,
-                 alpha=0.9, edgecolor="none", zorder=3)
+        if col == "shrunk_ratio":
+            # Corrected surface: prior-bleed cells (no lone star signal, too few
+            # sightings) get a neutral grey wash instead of a faint color; the
+            # rest keep the magma ramp.
+            insuff = _insufficient_mask(g)
+            gsuff, gins = g[~insuff], g[insuff]
+            if len(gins):
+                _hex_geodataframe(gins, col).plot(
+                    ax=ax, color=grey, alpha=grey_alpha, edgecolor="none",
+                    zorder=2,
+                )
+            if len(gsuff):
+                _hex_geodataframe(gsuff, col).plot(
+                    ax=ax, column=col, cmap=cmap, norm=norm, alpha=0.9,
+                    edgecolor="none", zorder=3,
+                )
+        else:
+            _hex_geodataframe(g, col).plot(
+                ax=ax, column=col, cmap=cmap, norm=norm, alpha=0.9,
+                edgecolor="none", zorder=3,
+            )
         ax.set_xlim(minx, maxx)
         ax.set_ylim(miny, maxy)
         ax.set_xticks([])
@@ -545,13 +593,24 @@ def fig_raw_vs_corrected(cells: pd.DataFrame) -> Path:
         f"Lone star tick: raw vs. effort-corrected share  ({win})",
         fontsize=16, fontweight="bold", color=INK, y=0.965,
     )
+    # Grey-patch legend for the corrected panel's insufficient-data cells.
+    from matplotlib.patches import Patch
+
+    axes[1].legend(
+        handles=[Patch(facecolor=config.VIZ_INSUFFICIENT_DATA_COLOR,
+                       edgecolor="none",
+                       label="too few sightings to judge")],
+        loc="lower left", fontsize=8.5, framealpha=1.0, edgecolor="#cccccc",
+    ).set_zorder(9)
+
     fig.text(
         0.5, 0.055,
         "Same window, same cells, same colour scale. The raw share is pinned to "
-        "0 or 1 in thin, single-observation cells (scattered dark specks); "
-        "empirical-Bayes shrinkage pulls those toward the regional rate while "
-        "well-sampled cells barely move — leaving the stable, effort-corrected "
-        "signal on the right.",
+        "0 or 1 in thin, single-sighting cells (the scattered dark specks). "
+        "Correcting for effort pulls those toward the regional rate while "
+        "well-sampled cells barely move, leaving the stable signal on the right. "
+        "Cells with too few sightings to judge are left grey, not faintly "
+        "colored, so the method's floor is not misread as real ticks.",
         ha="center", va="top", fontsize=9.5, color=MUTED, wrap=True,
     )
     out = config.FIGURES_DIR / config.VIZ_FIG_RAW_VS_CORR
@@ -562,7 +621,7 @@ def fig_raw_vs_corrected(cells: pd.DataFrame) -> Path:
 
 
 # --------------------------------------------------------------------------- #
-# Figure 2 -- northern-limit latitude, raw vs corrected, ~70 km advance
+# Figure 2 -- northern-limit latitude, raw vs corrected, ~66 km advance
 # --------------------------------------------------------------------------- #
 def fig_northern_limit(frontier: pd.DataFrame) -> Path:
     import matplotlib.pyplot as plt
@@ -673,7 +732,7 @@ def fig_centroid(frontier: pd.DataFrame) -> Path:
         0.5, -0.02,
         "Raw count-weighting drags the centroid south toward dense southern "
         "metros; share-weighting does not. The shrinking gap is effort bias "
-        "being removed as northern coverage fills in — not, by itself, a range "
+        "being removed as northern coverage fills in, not, by itself, a range "
         "shift.",
         ha="center", va="top", fontsize=9.5, color=MUTED, wrap=True,
     )
@@ -720,12 +779,13 @@ def export_corrected_gif(cells: pd.DataFrame) -> Path | None:
     cbar = fig.colorbar(sm, cax=cax, orientation="horizontal")
     cbar.set_label(config.VIZ_RATE_LABEL, fontsize=9)
     cbar.ax.tick_params(labelsize=8)
-    fig.suptitle("Lone star tick — effort-corrected share by window",
+    fig.suptitle("Lone star tick: effort-corrected share by window",
                  fontsize=14, fontweight="bold", color=INK, y=0.965)
     fig.text(
         0.5, 0.035,
-        "Corrected surface (share-weighted, EB-shrunk). Cell growth is partly a "
-        "coverage artifact; the northward edge is the signal.",
+        "Corrected surface (share of tick-spotting that was lone star). Cell "
+        "growth is partly a coverage artifact; the northward edge is the signal. "
+        "Grey cells have too few sightings to judge.",
         ha="center", va="top", fontsize=8.5, color=MUTED,
     )
     label = ax.text(
@@ -740,12 +800,21 @@ def export_corrected_gif(cells: pd.DataFrame) -> Path | None:
             art.remove()
         drawn.clear()
         g = clip[clip["window"] == win]
-        gdf = _hex_geodataframe(g, "shrunk_ratio")
-        coll = gdf.plot(
-            ax=ax, column="shrunk_ratio", cmap=cmap, norm=norm,
-            alpha=0.82, edgecolor="white", linewidth=0.1, zorder=3,
-        ).collections[-1]
-        drawn.append(coll)
+        insuff = _insufficient_mask(g)
+        gsuff, gins = g[~insuff], g[insuff]
+        if len(gins):
+            coll_grey = _hex_geodataframe(gins, "shrunk_ratio").plot(
+                ax=ax, color=config.VIZ_INSUFFICIENT_DATA_COLOR,
+                alpha=config.VIZ_INSUFFICIENT_DATA_OPACITY, edgecolor="none",
+                zorder=2,
+            ).collections[-1]
+            drawn.append(coll_grey)
+        if len(gsuff):
+            coll = _hex_geodataframe(gsuff, "shrunk_ratio").plot(
+                ax=ax, column="shrunk_ratio", cmap=cmap, norm=norm,
+                alpha=0.82, edgecolor="white", linewidth=0.1, zorder=3,
+            ).collections[-1]
+            drawn.append(coll)
         label.set_text(win)
         ax.set_xlim(minx, maxx)
         ax.set_ylim(miny, maxy)
@@ -801,8 +870,10 @@ def export_frontier_advance_gif(
     from matplotlib.lines import Line2D
 
     panel_aspect = (maxx - minx) / (maxy - miny)
-    fig, ax = plt.subplots(figsize=(12.5, 12.5 / panel_aspect + 1.6))
-    fig.subplots_adjust(left=0.02, right=0.9, top=0.87, bottom=0.17)
+    fig, ax = plt.subplots(figsize=(12.5, 12.5 / panel_aspect + 1.8))
+    # Reserve a top band for the title and a bottom band for the caption so map
+    # data can never climb into either.
+    fig.subplots_adjust(left=0.02, right=0.9, top=0.84, bottom=0.20)
     ax.set_xlim(minx, maxx)
     ax.set_ylim(miny, maxy)
     ax.set_xticks([])
@@ -827,10 +898,14 @@ def export_frontier_advance_gif(
     cbar.set_label(config.VIZ_RATE_LABEL, fontsize=9)
     cbar.ax.tick_params(labelsize=8)
 
+    from matplotlib.patches import Patch
+
     legend_handles = [
         Line2D([0], [0], color="#b3123f", lw=2.6, label="corrected northern edge"),
         Line2D([0], [0], color="#5b6b7a", lw=1.5, ls=(0, (4, 3)),
-               label="2015–17 baseline edge"),
+               label="2015-17 baseline edge"),
+        Patch(facecolor=config.VIZ_INSUFFICIENT_DATA_COLOR, edgecolor="none",
+              label="too few sightings to judge"),
     ]
     if config.VIZ_FRONTIER_HIGHLIGHT_NEW:
         legend_handles.append(
@@ -839,28 +914,34 @@ def export_frontier_advance_gif(
                    markerfacecolor="none", markersize=8,
                    label="newly occupied (this window)")
         )
-    ax.legend(handles=legend_handles, loc="lower left", fontsize=8.5,
-              framealpha=0.92, edgecolor="#cccccc").set_zorder(9)
+    # Opaque frame + high zorder so map data and basemap labels sit beneath it.
+    leg = ax.legend(handles=legend_handles, loc="lower left", fontsize=8.5,
+                    framealpha=1.0, edgecolor="#cccccc")
+    leg.set_zorder(20)
+    leg.get_frame().set_facecolor("white")
 
-    fig.suptitle("Lone star tick — the corrected northern edge, advancing",
-                 fontsize=16, fontweight="bold", color=INK, y=0.965)
+    # Title in the reserved top margin; caption in the reserved bottom margin.
+    fig.suptitle("Lone star tick: the corrected northern edge, advancing",
+                 fontsize=16, fontweight="bold", color=INK, y=0.955)
     fig.text(
-        0.46, 0.105,
-        "View cropped to the frontier band (Midwest → Northeast). Solid line = "
-        "corrected northern edge (per-longitude 95th-pct latitude of positive "
-        "cells).\nFill-in elsewhere is partly a coverage artifact — the ~66 km "
-        "edge advance is the real signal, not the area growth.",
+        0.46, 0.135,
+        "View cropped to the frontier band (Midwest to Northeast). Solid line is "
+        "the corrected northern edge (per-longitude 95th-percentile latitude of "
+        "positive cells).\nFill-in elsewhere is partly a coverage artifact: the "
+        "~66 km edge advance is the real signal, not the area growth. Grey cells "
+        "have too few sightings to judge.",
         ha="center", va="top", fontsize=9, color=MUTED, linespacing=1.5,
     )
+    # Animated year + readout: opaque boxes, drawn above all map data.
     label = ax.text(
         0.02, 0.96, "", transform=ax.transAxes, ha="left", va="top",
-        fontsize=17, fontweight="bold", color=INK,
-        bbox=dict(boxstyle="round,pad=0.35", fc="white", ec="#cccccc", alpha=0.92),
+        fontsize=17, fontweight="bold", color=INK, zorder=21,
+        bbox=dict(boxstyle="round,pad=0.35", fc="white", ec="#cccccc", alpha=1.0),
     )
     readout = ax.text(
         0.02, 0.85, "", transform=ax.transAxes, ha="left", va="top",
-        fontsize=12, color=INK,
-        bbox=dict(boxstyle="round,pad=0.3", fc="#fbf7ef", ec="#e2d9c5", alpha=0.94),
+        fontsize=12, color=INK, zorder=21,
+        bbox=dict(boxstyle="round,pad=0.3", fc="#fbf7ef", ec="#e2d9c5", alpha=1.0),
     )
 
     drawn: list[Any] = []
@@ -872,12 +953,24 @@ def export_frontier_advance_gif(
         drawn.clear()
 
         g = clip[clip["window"] == win]
-        gdf = _hex_geodataframe(g, "shrunk_ratio")
-        coll = gdf.plot(
-            ax=ax, column="shrunk_ratio", cmap=cmap, norm=norm,
-            alpha=0.9, edgecolor="none", zorder=3,
-        ).collections[-1]
-        drawn.append(coll)
+        # Prior-bleed cells (no lone star signal, too few sightings) get a neutral
+        # grey wash; the rest keep the magma ramp. Applied every frame, so this
+        # holds across all windows (2015-2026).
+        insuff = _insufficient_mask(g)
+        gsuff, gins = g[~insuff], g[insuff]
+        if len(gins):
+            coll_grey = _hex_geodataframe(gins, "shrunk_ratio").plot(
+                ax=ax, color=config.VIZ_INSUFFICIENT_DATA_COLOR,
+                alpha=config.VIZ_INSUFFICIENT_DATA_OPACITY, edgecolor="none",
+                zorder=2,
+            ).collections[-1]
+            drawn.append(coll_grey)
+        if len(gsuff):
+            coll = _hex_geodataframe(gsuff, "shrunk_ratio").plot(
+                ax=ax, column="shrunk_ratio", cmap=cmap, norm=norm,
+                alpha=0.9, edgecolor="none", zorder=3,
+            ).collections[-1]
+            drawn.append(coll)
 
         # Newly occupied cells north of the prior window's edge.
         if config.VIZ_FRONTIER_HIGHLIGHT_NEW and i > 0:
