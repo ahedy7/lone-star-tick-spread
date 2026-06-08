@@ -9,6 +9,8 @@ and how fast?
 
 ### [Open the live interactive map](https://ahedy7.github.io/lone-star-tick-spread/)
 
+<img width="1461" height="764" alt="image" src="https://github.com/user-attachments/assets/444e6735-8ca6-4fd0-b900-12020f6d39c6" />
+
 This project answers that with a map you can scrub through time. You drag a slider
 from the past toward today and watch the tick's leading edge climb north across
 the country, year by year: where the front line sat about a decade ago, where it
