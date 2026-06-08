@@ -46,7 +46,7 @@ next spring sees next spring's leading edge, not last year's.
 
 <p align="center">
   <img src="reports/figures/stage4_frontier_advance.gif"
-       alt="The corrected northern edge of the lone star tick advancing over the decade" width="760">
+       alt="The corrected northern edge of the lone star tick advancing over the decade" width="900">
 </p>
 <p align="center"><em>The corrected northern edge, cropped to the Midwest-to-Northeast
 frontier band so the advance is legible. The climbing crimson line is the
