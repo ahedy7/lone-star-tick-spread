@@ -870,10 +870,11 @@ def export_frontier_advance_gif(
     from matplotlib.lines import Line2D
 
     panel_aspect = (maxx - minx) / (maxy - miny)
-    fig, ax = plt.subplots(figsize=(12.5, 12.5 / panel_aspect + 1.8))
-    # Reserve a top band for the title and a bottom band for the caption so map
+    fig, ax = plt.subplots(figsize=(12.5, 12.5 / panel_aspect + 2.4))
+    # Reserve a top band for the title and a bottom band that holds, in order,
+    # the legend strip and the caption -- both live outside the map axes so hex
     # data can never climb into either.
-    fig.subplots_adjust(left=0.02, right=0.9, top=0.84, bottom=0.20)
+    fig.subplots_adjust(left=0.02, right=0.9, top=0.85, bottom=0.31)
     ax.set_xlim(minx, maxx)
     ax.set_ylim(miny, maxy)
     ax.set_xticks([])
@@ -893,7 +894,7 @@ def export_frontier_advance_gif(
     # Vertical colourbar on the right (the band map is wide + short).
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cax = fig.add_axes([0.915, 0.26, 0.013, 0.46])
+    cax = fig.add_axes([0.915, 0.37, 0.013, 0.42])
     cbar = fig.colorbar(sm, cax=cax, orientation="vertical")
     cbar.set_label(config.VIZ_RATE_LABEL, fontsize=9)
     cbar.ax.tick_params(labelsize=8)
@@ -914,17 +915,25 @@ def export_frontier_advance_gif(
                    markerfacecolor="none", markersize=8,
                    label="newly occupied (this window)")
         )
-    # Opaque frame + high zorder so map data and basemap labels sit beneath it.
-    leg = ax.legend(handles=legend_handles, loc="lower left", fontsize=8.5,
-                    framealpha=1.0, edgecolor="#cccccc")
+    # Legend lives in its own strip BELOW the map (figure-level, not on the
+    # axes), so no hex data can ever overlap it on any frame. A single
+    # horizontal row keeps it inside the reserved band above the caption.
+    # frameon must be set explicitly: _apply_style() turns legend frames off
+    # globally, which is what previously left the framealpha box invisible.
+    leg = fig.legend(
+        handles=legend_handles, loc="upper center",
+        bbox_to_anchor=(0.46, 0.265), ncol=len(legend_handles),
+        fontsize=8.5, frameon=True, framealpha=1.0,
+        edgecolor="#cccccc", facecolor="white", borderpad=0.7,
+        columnspacing=1.6, handletextpad=0.6,
+    )
     leg.set_zorder(20)
-    leg.get_frame().set_facecolor("white")
 
     # Title in the reserved top margin; caption in the reserved bottom margin.
     fig.suptitle("Lone star tick: the corrected northern edge, advancing",
                  fontsize=16, fontweight="bold", color=INK, y=0.955)
     fig.text(
-        0.46, 0.135,
+        0.46, 0.16,
         "View cropped to the frontier band (Midwest to Northeast). Solid line is "
         "the corrected northern edge (per-longitude 95th-percentile latitude of "
         "positive cells).\nFill-in elsewhere is partly a coverage artifact: the "

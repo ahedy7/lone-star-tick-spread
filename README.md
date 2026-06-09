@@ -51,7 +51,7 @@ next spring sees next spring's leading edge, not last year's.
 <p align="center"><em>The corrected northern edge, cropped to the Midwest-to-Northeast
 frontier band so the advance is legible. The climbing crimson line is the
 per-longitude 95th-percentile latitude of positive cells; the dashed line is the
-2015-2017 baseline.</em></p>
+2015-2017 baseline. A key in the strip below the map labels each layer.</em></p>
 
 ---
 
