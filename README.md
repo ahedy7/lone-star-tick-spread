@@ -103,7 +103,7 @@ Two independent layers keep the citizen-science story honest:
 
 <p align="center">
   <img src="reports/figures/stage4_raw_vs_corrected_recent.png"
-       alt="Raw versus effort-corrected share, most recent window, same color scale" width="860">
+       alt="Raw versus effort-corrected share, most recent window, same color scale" width="1000">
 </p>
 <p align="center"><em>Same window, same cells, same color scale. Raw share (left) is
 pinned to 0 or 1 in thin single-observation cells (the scattered dark specks);
