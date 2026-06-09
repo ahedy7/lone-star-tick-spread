@@ -167,6 +167,16 @@ working public map with an empty one.
 
 ---
 
+## Why this matters
+
+The lone star tick really is moving north, and the advance is modest but real, roughly 66 km a decade rather than a sudden invasion. If you live in the Northeast, the practical takeaway is that this is a species worth being aware of, since its bite can trigger an allergy to red meat. This map is a way to see the trend, not a medical tool. For whether the tick is established in your county and what to do about it, the CDC's surveillance is the authority, and this project is built to agree with it wherever the data is good.
+
+The part that outlasts the ticks is the method. This is really a worked example of a problem that appears everywhere people collect data by reporting things: crime reports, 311 complaints, wildlife sightings, disease surveillance. In all of them, more records can mean more of the thing, or simply more people reporting it. Counting raw events conflates the two and produces a confident map of where the observers are. The fix used here, measuring a share so that the reporting effort cancels out, is general. The tick is just the case study. The transferable idea is that the first question to ask of any crowdsourced map is not "where are the events," but "where would the events be if everyone were looking equally hard."
+
+
+---
+
+
 ## Data
 
 - **GBIF occurrences** (US, georeferenced), pulled via the citable download API.
